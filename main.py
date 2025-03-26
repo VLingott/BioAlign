@@ -13,6 +13,7 @@ from docx.oxml.ns import qn
 
 import hashlib
 
+
 def prepare_seq(seqs: dict, output_file_name: str):
     if "." in output_file_name:
         input_file_name = "".join(output_file_name.split(".")[:-1]) + ".fasta"
@@ -90,35 +91,36 @@ def create_word_document_and_mark(
     run = paragraph.runs[0]
 
     # Clear existing runs and apply marks
-    paragraph._element.clear()
-    i = 0
-    while i + 1 <= len(marks):
-        t = type(marks[i][0])
-        if t != int:
-            print(t)
+    if len(marks) != 0:
+        paragraph._element.clear()
+        i = 0
+        while i + 1 <= len(marks):
+            t = type(marks[i][0])
+            if t != int:
+                print(t)
 
-        # Add the non-marked part before the current mark
-        if i == 0:
-            unmarked_text = raw_text[:marks[i][0]]
-        else:
-            unmarked_text = raw_text[marks[i - 1][1]:marks[i][0]]
-        run = paragraph.add_run(unmarked_text)
-        run.font.name = font_name
-        run.font.size = Pt(font_size)
+            # Add the non-marked part before the current mark
+            if i == 0:
+                unmarked_text = raw_text[:marks[i][0]]
+            else:
+                unmarked_text = raw_text[marks[i - 1][1]:marks[i][0]]
+            run = paragraph.add_run(unmarked_text)
+            run.font.name = font_name
+            run.font.size = Pt(font_size)
 
-        # Add the marked part
-        run = paragraph.add_run(raw_text[marks[i][0]:marks[i][1]])
-        run.font.name = font_name
-        run.font.size = Pt(font_size)
-        run.font.highlight_color = marks[i][2]
+            # Add the marked part
+            run = paragraph.add_run(raw_text[marks[i][0]:marks[i][1]])
+            run.font.name = font_name
+            run.font.size = Pt(font_size)
+            run.font.highlight_color = marks[i][2]
 
-        i += 1
+            i += 1
 
-    if marks[-1][1] < len(raw_text):
-        # Add unmarked part at the end
-        run = paragraph.add_run(raw_text[marks[-1][1]:])
-        run.font.name = font_name
-        run.font.size = Pt(font_size)
+        if marks[-1][1] < len(raw_text):
+            # Add unmarked part at the end
+            run = paragraph.add_run(raw_text[marks[-1][1]:])
+            run.font.name = font_name
+            run.font.size = Pt(font_size)
 
     document.save(filename)
 
@@ -250,12 +252,14 @@ if __name__ == "__main__":
 
     # get user settings
     word_filename = "sequences.docx"
-    search_word = input("Input DNA sequence to search for (e.g. \"ACC\"): ").strip()
-    skip_spaces = True if "space" in input("Search mode (exact/spaced): ") else False
-    separate_marking_colors = True if "y" in input("Separate marking colors for each sequence (yes/no): ") else False
+    matches = []
+    search_word = input("Input DNA sequence to search for (e.g. \"ACC\" or \"\" to disable marking): ").strip()
+    if len(search_word) != 0:
+        skip_spaces = True if "space" in input("Search mode (exact/spaced): ") else False
+        separate_marking_colors = True if "y" in input("Separate marking colors for each sequence (yes/no): ") else False
 
-    # compute markings for DNA sequence
-    matches = mark_sequences(text, search_word, skip_spaces, separate_marking_colors)
+        # compute markings for DNA sequence
+        matches = mark_sequences(text, search_word, skip_spaces, separate_marking_colors)
 
     # create word document with markings
     create_word_document_and_mark(word_filename, text, marks=matches)
