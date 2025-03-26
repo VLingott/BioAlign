@@ -1,19 +1,17 @@
 import json
-
+import hashlib
+import subprocess
 import os.path
 import sys
 
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-import subprocess
 
 from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_COLOR_INDEX
 from docx.oxml.ns import qn
-
-import hashlib
 
 
 def prepare_seq(seqs: dict, output_file_name: str):
@@ -259,6 +257,9 @@ if __name__ == "__main__":
 
         # compute markings for DNA sequence
         matches = mark_sequences(text, search_word, skip_spaces, separate_marking_colors)
+
+    matches_num = len(matches)
+    print(f"{matches_num if matches_num != 0 else "No"} matches of \"{search_word}\" found.")
 
     # create word document with markings
     create_word_document_and_mark(word_filename, text, marks=matches)
