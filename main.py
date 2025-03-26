@@ -1,3 +1,5 @@
+import sys
+
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
@@ -66,7 +68,6 @@ def create_word_document_and_mark(
         raw_text,
         font_name="Courier New",
         font_size=9,
-        highlight_color=WD_COLOR_INDEX.RED,
         margin_inches=0.5,
         marks=[],
     ):
@@ -93,6 +94,10 @@ def create_word_document_and_mark(
     paragraph._element.clear()
     i = 0
     while i + 1 <= len(marks):
+        t = type(marks[i][0])
+        if t != int:
+            print(t)
+
         # Add the non-marked part before the current mark
         if i == 0:
             unmarked_text = raw_text[:marks[i][0]]
@@ -106,7 +111,7 @@ def create_word_document_and_mark(
         run = paragraph.add_run(raw_text[marks[i][0]:marks[i][1]])
         run.font.name = font_name
         run.font.size = Pt(font_size)
-        run.font.highlight_color = highlight_color
+        run.font.highlight_color = marks[i][2]
 
         i += 1
 
@@ -125,7 +130,8 @@ def mark(
     skip_space: bool = False,
     skip_lines: int = 0,
     initial_skip_lines: int = 0,
-    skip_line_prefix: bool = False
+    skip_line_prefix: bool = False,
+    marking_color: WD_COLOR_INDEX = WD_COLOR_INDEX.RED,
 ) -> [tuple[int, int]]:
     matches = []
     wi = 0          # number of characters matched from search_word so far
@@ -157,7 +163,7 @@ def mark(
         if text[i] == '\n':
             # Append the current match segment (if any) before pausing.
             if wi > 0 and not cooldown and skip_space:
-                matches.append((starti, i))
+                matches.append((starti, i, marking_color))
                 cooldown = True
                 marked_over_newline = True
 
@@ -185,7 +191,7 @@ def mark(
             wi += 1
             # If the full search word is matched, append the match.
             if wi == len(search_word):
-                matches.append((starti, i + 1))
+                matches.append((starti, i + 1, marking_color))
                 starti = -1
                 wi = 0
             else:
@@ -218,8 +224,15 @@ if __name__ == "__main__":
     word_filename = "sequences.docx"
     search_word = input("Input DNA sequence to search for (e.g. \"ACC\"): ").strip()
     allow_spaces = input("Search mode (exact/spaced): ")
-    marks = mark(text, search_word, skip_space=True if "space" in allow_spaces.lower() else False, initial_skip_lines=3, skip_lines=4, skip_line_prefix=True)
-    print(marks)
+    separate_marking_colors = True if "yes" in input("Separate marking colors for each sequence (yes/no): ") else False
+
+    marks = []
+    for sequence in range(len(sequences)):
+        if separate_marking_colors:
+            marks += mark(text, search_word, skip_space=True if "space" in allow_spaces.lower() else False, initial_skip_lines=3+sequence, skip_lines=4, skip_line_prefix=True, marking_color=([WD_COLOR_INDEX.RED, WD_COLOR_INDEX.BLUE, WD_COLOR_INDEX.PINK])[sequence])
+        else:
+            marks += mark(text, search_word, skip_space=True if "space" in allow_spaces.lower() else False, initial_skip_lines=3 + sequence, skip_lines=4, skip_line_prefix=True)
+    marks = sorted(marks, key=lambda x: x[0])
 
     create_word_document_and_mark(word_filename, text, marks=marks)
     print(f"Word document \"{word_filename}\" created successfully.")
