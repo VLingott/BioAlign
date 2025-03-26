@@ -1,3 +1,5 @@
+import json
+
 import os.path
 import sys
 
@@ -224,9 +226,9 @@ def mark_sequences(sequence: str, search: str, spaced: bool, separate_colors: bo
 
 
 if __name__ == "__main__":
-    # change sequence in sequences.py file. create if not exists.
-    import sequences as sequences_module
-    sequences = sequences_module.sequences
+    # change sequence in sequences.json file. create if it does not exists.
+    # in json file: change this if you want to have other DNA sequences. add as many as you like in the following syntax: {"Name for sequence": "sequence", "Name for sequence": "sequence", ...}
+    sequences = json.load(open("sequences.json"))
 
     # skipping generation of DNA alignment if sequence is unchanged
     path_hash = ".sequencehash"
