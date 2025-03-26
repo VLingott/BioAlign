@@ -144,7 +144,7 @@ def mark_sequences(sequence: str, search: str, spaced: bool, separate_colors: bo
         sequence_i = 0
         search_i = 0
         start_i = -1
-        color = ([WD_COLOR_INDEX.GREEN, WD_COLOR_INDEX.BLUE, WD_COLOR_INDEX.PINK])[s % num_sequences] if separate_colors else WD_COLOR_INDEX.YELLOW
+        color = ([WD_COLOR_INDEX.BRIGHT_GREEN, WD_COLOR_INDEX.YELLOW, WD_COLOR_INDEX.PINK])[s % num_sequences] if separate_colors else WD_COLOR_INDEX.YELLOW
 
         # skip header
         skip_lines(3 + s)
