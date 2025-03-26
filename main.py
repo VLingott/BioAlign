@@ -5,6 +5,7 @@ import subprocess
 
 import re
 
+from Bio.TogoWS import search_count
 from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_COLOR_INDEX
@@ -12,7 +13,6 @@ from docx.oxml.ns import qn
 
 
 def prepare_seq(seqs: dict, output_file_name: str):
-    input_file_name = ""
     if "." in output_file_name:
         input_file_name = "".join(output_file_name.split(".")[:-1]) + ".fasta"
     else:
@@ -61,21 +61,12 @@ def prepare_formatted_seq(aln_file_name: str) -> str:
     return aln_seq
 
 
-def find_sequences(text, sequence, search_mode="spaced"):
-    if search_mode == "exact":
-        regex_compiled = re.compile(r'\b' + sequence + r'\b')
-    elif search_mode == "spaced":
-        regex_compiled = re.compile(r'\s*'.join(sequence))
-    matches = [(m.start(), m.end()) for m in regex_compiled.finditer(text)]
-    return matches
-
-
 def create_word_document_and_mark(
         filename,
         raw_text,
         font_name="Courier New",
         font_size=9,
-        highlight_color=WD_COLOR_INDEX.YELLOW,
+        highlight_color=WD_COLOR_INDEX.RED,
         margin_inches=0.5,
         marks=[],
     ):
@@ -94,39 +85,124 @@ def create_word_document_and_mark(
     style.font.name = font_name
     style.font.size = Pt(font_size)
     style._element.rPr[0].set(qn("w:ascii"), font_name)
-    style._element.rPr[0].set(qn("w:eastAsia"), font_name)
-    style._element.rPr[0].set(qn("w:hAnsi"), font_name)
-    style._element.rPr[0].set(qn("w:cs"), font_name)
 
     paragraph = document.add_paragraph(raw_text, style="Monospace")
     run = paragraph.runs[0]
 
     # Clear existing runs and apply marks
     paragraph._element.clear()
-    last_index = 0
-    for start, end in marks:
+    i = 0
+    while i + 1 <= len(marks):
         # Add the non-marked part before the current mark
-        if start > last_index:
-            run = paragraph.add_run(raw_text[last_index:start])
-            run.font.name = font_name
-            run.font.size = Pt(font_size)
-            last_index = start
+        if i == 0:
+            unmarked_text = raw_text[:marks[i][0]]
+        else:
+            unmarked_text = raw_text[marks[i - 1][1]:marks[i][0]]
+        run = paragraph.add_run(unmarked_text)
+        run.font.name = font_name
+        run.font.size = Pt(font_size)
 
         # Add the marked part
-        marked_text = raw_text[start:end]
-        run = paragraph.add_run(marked_text)
+        run = paragraph.add_run(raw_text[marks[i][0]:marks[i][1]])
         run.font.name = font_name
         run.font.size = Pt(font_size)
         run.font.highlight_color = highlight_color
-        last_index = end
 
-    # Add the remaining part after the last mark
-    if last_index < len(raw_text):
-        run = paragraph.add_run(raw_text[last_index:])
+        i += 1
+
+    if marks[-1][1] < len(raw_text):
+        # Add unmarked part at the end
+        run = paragraph.add_run(raw_text[marks[-1][1]:])
         run.font.name = font_name
         run.font.size = Pt(font_size)
 
     document.save(filename)
+
+
+def mark(
+    text: str,
+    search_word: str,
+    skip_space: bool = False,
+    skip_lines: int = 0,
+    initial_skip_lines: int = 0,
+    skip_line_prefix: bool = False
+) -> [tuple[int, int]]:
+    matches = []
+    wi = 0          # number of characters matched from search_word so far
+    starti = -1     # starting index for the current match in text
+    i = 0           # current index in text
+    cooldown = False
+    marked_over_newline = False
+
+    # Skip the specified number of initial lines.
+    if initial_skip_lines:
+        lines_skipped = 0
+        while i < len(text) and lines_skipped < initial_skip_lines:
+            if text[i] == '\n':
+                lines_skipped += 1
+            i += 1
+
+    while i < len(text):
+        # At the beginning of a line, optionally skip a label/prefix.
+        if skip_line_prefix and (i == 0 or text[i - 1] == '\n') and text[i] != '\n':
+            # Skip over the non-space prefix (the label)
+            while i < len(text) and text[i] not in (' ', '\n'):
+                i += 1
+            # Then skip any spaces following the prefix.
+            while i < len(text) and text[i] == ' ':
+                i += 1
+            continue
+
+        # When a newline is encountered, pause the match.
+        if text[i] == '\n':
+            # Append the current match segment (if any) before pausing.
+            if wi > 0 and not cooldown and skip_space:
+                matches.append((starti, i))
+                cooldown = True
+                marked_over_newline = True
+
+            i += 1  # skip the newline itself
+            starti = -1  # pause matching after the newline until newlines have been skipped
+
+            # Then skip extra lines as requested.
+            lines_skipped = 0
+            while i < len(text) and lines_skipped < skip_lines:
+                if text[i] == '\n':
+                    lines_skipped += 1
+                i += 1
+            if marked_over_newline and i + 1 >= len(text):
+                matches.pop(-1)
+            continue
+
+        # Matching logic.
+        if text[i] == search_word[wi]:
+            # Mark start if this is the first character of a potential match.
+            if marked_over_newline and wi + 1 == len(search_word):
+                marked_over_newline = False
+            if starti == -1:
+                starti = i
+                cooldown = False
+            wi += 1
+            # If the full search word is matched, append the match.
+            if wi == len(search_word):
+                matches.append((starti, i + 1))
+                starti = -1
+                wi = 0
+            else:
+                # Optionally, skip a space if the flag is enabled.
+                if skip_space and (i + 1) < len(text) and text[i + 1] == ' ':
+                    i += 1
+        else:
+            if marked_over_newline:
+                matches.pop(-1)
+                marked_over_newline = False
+            # On a mismatch, reset the match state.
+            starti = -1
+            wi = 0
+
+        i += 1
+
+    return matches
 
 
 if __name__ == "__main__":
@@ -140,13 +216,10 @@ if __name__ == "__main__":
     text = prepare_formatted_seq("sequences.aln")
 
     word_filename = "sequences.docx"
-    search_word = input("Input DNA sequence to search for (e.g. \"ACC\"): ")
+    search_word = input("Input DNA sequence to search for (e.g. \"ACC\"): ").strip()
     allow_spaces = input("Search mode (exact/spaced): ")
-    search_mode = "exact"
-    if "exact" in allow_spaces:
-        search_mode = "exact"
-    elif "spaced" in allow_spaces:
-        allow_spaces = "spaced"
-    marks = find_sequences(text, search_word, allow_spaces)
+    marks = mark(text, search_word, skip_space=True if "space" in allow_spaces.lower() else False, initial_skip_lines=3, skip_lines=4, skip_line_prefix=True)
+    print(marks)
+
     create_word_document_and_mark(word_filename, text, marks=marks)
     print(f"Word document \"{word_filename}\" created successfully.")
