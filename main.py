@@ -5,9 +5,6 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 import subprocess
 
-import re
-
-from Bio.TogoWS import search_count
 from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_COLOR_INDEX
@@ -26,7 +23,7 @@ def prepare_seq(seqs: dict, output_file_name: str):
     command_return = subprocess.run(f".\\clustal-omega-1.2.2-win64\\clustalo.exe --infile {input_file_name} --outfile {output_file_name} --outfmt clustal --force")
     if command_return.returncode != 0:
         print(f"An error occurred while running clustal-omega.\nCommand: {command_return.args}\nReturncode: {command_return.returncode}")
-        exit(-1)
+        sys.exit(-1)
 
 
 def prepare_formatted_seq(aln_file_name: str) -> str:
@@ -227,15 +224,15 @@ if __name__ == "__main__":
 
     word_filename = "sequences.docx"
     search_word = input("Input DNA sequence to search for (e.g. \"ACC\"): ").strip()
-    allow_spaces = input("Search mode (exact/spaced): ")
+    skip_spaces = True if "space" in input("Search mode (exact/spaced): ") else False
     separate_marking_colors = True if "yes" in input("Separate marking colors for each sequence (yes/no): ") else False
 
     marks = []
     for sequence in range(len(sequences)):
         if separate_marking_colors:
-            marks += mark(text, search_word, skip_space=True if "space" in allow_spaces.lower() else False, initial_skip_lines=3+sequence, skip_lines=4, skip_line_prefix=True, marking_color=([WD_COLOR_INDEX.RED, WD_COLOR_INDEX.BLUE, WD_COLOR_INDEX.PINK])[sequence])
+            marks += mark(text, search_word, skip_space=skip_spaces, initial_skip_lines=3+sequence, skip_lines=4, skip_line_prefix=True, marking_color=([WD_COLOR_INDEX.RED, WD_COLOR_INDEX.BLUE, WD_COLOR_INDEX.PINK])[sequence % 3])
         else:
-            marks += mark(text, search_word, skip_space=True if "space" in allow_spaces.lower() else False, initial_skip_lines=3 + sequence, skip_lines=4, skip_line_prefix=True)
+            marks += mark(text, search_word, skip_space=skip_spaces, initial_skip_lines=3+sequence, skip_lines=4, skip_line_prefix=True)
     marks = sorted(marks, key=lambda x: x[0])
 
     create_word_document_and_mark(word_filename, text, marks=marks)
