@@ -167,6 +167,10 @@ def mark(
                 cooldown = True
                 marked_over_newline = True
 
+            # Reset word index if skip_space is not activated.
+            if not skip_space:
+                wi = 0
+
             i += 1  # skip the newline itself
             starti = -1  # pause matching after the newline until newlines have been skipped
 
