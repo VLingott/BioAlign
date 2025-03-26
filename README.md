@@ -116,11 +116,17 @@ pip install biopython python-docx
 
 2. **macOS**:
    - Install via Homebrew: `brew install clustal-omega`
-   - Modify the path in the prepare_seq function where Clustal Omega is called to use: `command_return = subprocess.run(f"clustalo --infile {input_file_name} --outfile {output_file_name} --outfmt clustal --force", shell=True)`
+   - Modify the path in the prepare_seq function where Clustal Omega is called to use:
+     ```python
+     command_return = subprocess.run(f"clustalo --infile {input_file_name} --outfile {output_file_name} --outfmt clustal --force", shell=True)
+     ```
 
 3. **Linux**:
    - Install via package manager: `sudo apt install clustal-omega` (Ubuntu/Debian) or equivalent
-   - Modify the path in the prepare_seq function where Clustal Omega is called to use: `command_return = subprocess.run(f"clustalo --infile {input_file_name} --outfile {output_file_name} --outfmt clustal --force", shell=True)`
+   - Modify the path in the prepare_seq function where Clustal Omega is called to use:
+     ```python
+     command_return = subprocess.run(f"clustalo --infile {input_file_name} --outfile {output_file_name} --outfmt clustal --force", shell=True)
+     ```
 
 ### Required Files Structure
 
