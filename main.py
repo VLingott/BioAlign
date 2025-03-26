@@ -241,7 +241,7 @@ if __name__ == "__main__":
             file.write(new_hash)
         print("Computing DNA sequence alignment...", end='')
         prepare_seq(sequences, "sequences.aln")
-        print("\rComputed DNA sequence alignment.\n")
+        print("\rComputed DNA sequence alignment.  \n")
     else:
         print("Reusing unchanged DNA alignment file.\n")
 
