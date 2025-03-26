@@ -225,7 +225,7 @@ if __name__ == "__main__":
     word_filename = "sequences.docx"
     search_word = input("Input DNA sequence to search for (e.g. \"ACC\"): ").strip()
     skip_spaces = True if "space" in input("Search mode (exact/spaced): ") else False
-    separate_marking_colors = True if "yes" in input("Separate marking colors for each sequence (yes/no): ") else False
+    separate_marking_colors = True if "y" in input("Separate marking colors for each sequence (yes/no): ") else False
 
     marks = []
     for sequence in range(len(sequences)):
