@@ -95,7 +95,7 @@ For the provided example sequences, searching for "CTG" with spaced mode enabled
 
 - The tool caches alignment results to avoid redundant calculations
 - The Word document uses Courier New font for consistent spacing
-- Highlighting uses yellow by default, or green/blue/pink when using separate colors
+- Highlighting uses yellow by default, or green/yellow/pink when using separate colors
 
 ## Developer Setup
 
@@ -133,7 +133,6 @@ pip install biopython python-docx
 Create the following files in your working directory:
 - `main.py` - The main program
 - `sequences.json` - Your DNA sequences in JSON format
-- `start.bat` (optional) - For easy launching on Windows
 
 ## Requirements
 
