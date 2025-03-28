@@ -1,8 +1,9 @@
-# BioAlign - DNA Sequence Alignment Tool
+# BioAlign - DNA Sequence Alignment and Marking Tool
 
-BioAlign is a user-friendly tool for DNA sequence alignment and visualization. It uses Clustal Omega for alignment and creates nicely formatted Word documents with customizable sequence highlighting.
+BioAlign is a user-friendly tool for DNA sequence alignment, marking and visualization. It uses Clustal Omega for alignment and creates nicely formatted HTML and Word documents with sequence highlighting.
 
 ## Table of Contents
+
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -27,8 +28,9 @@ BioAlign is a user-friendly tool for DNA sequence alignment and visualization. I
 - Automatic DNA sequence alignment using Clustal Omega
 - Triplet notation formatting for better readability
 - Search and highlight specific DNA sequences in the alignment
-- Option for spaced or exact sequence matching
-- Different highlight colors for each sequence (optional)
+- Advanced pattern matching with both exact and space-ignoring modes
+- Cross-line sequence matching (finds patterns spanning multiple sequence lines)
+- Output to both HTML and Word documents with highlighted matches
 - Caching of alignment results for unchanged sequences
 
 ## Installation
@@ -39,6 +41,7 @@ No installation required! The release zip file contains everything you need:
 2. Run `start.bat` to launch the application
 
 The package includes:
+
 - Embedded Python 3.13.2 runtime
 - Clustal Omega 1.2.2 executable
 - All required Python dependencies
@@ -58,6 +61,7 @@ Create or edit the `sequences.json` file in the application folder. This file sh
 ```
 
 Where:
+
 - Each key is the sequence name
 - Each value is the DNA sequence
 - You can add as many sequences as needed
@@ -76,26 +80,32 @@ When prompted:
 
 1. Enter a DNA sequence to search for (e.g., "CTG") or leave empty to disable highlighting
 2. Choose search mode:
-   - `exact`: Matches only exact sequences without spaces
-   - `spaced`: Matches sequences allowing for spaces between nucleotides
-3. Choose whether to use separate colors for each sequence (yes/no)
+   - `exact`: Matches only exact sequences including spaces
+   - `spaced`: Ignores spaces during matching, useful for finding patterns across triplet notation
+
+The improved spaced mode can now correctly identify patterns that span across the triplet spaces in the formatted output.
 
 ### Output
 
 The program generates:
+
 - `sequences.fasta`: The input file for Clustal Omega
 - `sequences.aln`: The alignment result from Clustal Omega
-- `sequences.docx`: The final Word document with formatted alignment and highlighting
+- `sequences.html`: HTML document with formatted alignment and highlighting
+- `sequences.docx`: Word document with formatted alignment and highlighting
+
+The HTML output provides a lightweight, browser-viewable alternative that doesn't require Microsoft Word to open.
 
 ## Example
 
-For the provided example sequences, searching for "CTG" with spaced mode enabled will highlight this pattern in all sequences, allowing you to easily compare variations.
+For the provided example sequences, searching for "CTG" with spaced mode enabled will highlight this pattern in all sequences, allowing you to easily compare variations. The improved algorithm will now correctly find instances even when they span across the spaces in triplet notation.
 
 ## Notes
 
 - The tool caches alignment results to avoid redundant calculations
 - The Word document uses Courier New font for consistent spacing
-- Highlighting uses yellow by default, or green/blue/pink when using separate colors
+- The HTML output uses the same monospace formatting for consistency with the Word document
+- The improved marking algorithm can now detect patterns that span across multiple lines of the same sequence
 
 ## Developer Setup
 
@@ -110,13 +120,14 @@ pip install biopython python-docx
 ### Installing Clustal Omega
 
 1. **Windows**:
-   - Download Clustal Omega from http://www.clustal.org/omega/
+   - Download Clustal Omega from <http://www.clustal.org/omega/>
    - Extract the files to a directory named `clustal-omega-1.2.2-win64` in the same folder as main.py
    - Ensure that `clustalo.exe` is directly inside this directory
 
 2. **macOS**:
    - Install via Homebrew: `brew install clustal-omega`
    - Modify the path in the prepare_seq function where Clustal Omega is called to use:
+
      ```python
      command_return = subprocess.run(f"clustalo --infile {input_file_name} --outfile {output_file_name} --outfmt clustal --force", shell=True)
      ```
@@ -124,6 +135,7 @@ pip install biopython python-docx
 3. **Linux**:
    - Install via package manager: `sudo apt install clustal-omega` (Ubuntu/Debian) or equivalent
    - Modify the path in the prepare_seq function where Clustal Omega is called to use:
+
      ```python
      command_return = subprocess.run(f"clustalo --infile {input_file_name} --outfile {output_file_name} --outfmt clustal --force", shell=True)
      ```
@@ -131,6 +143,7 @@ pip install biopython python-docx
 ### Required Files Structure
 
 Create the following files in your working directory:
+
 - `main.py` - The main program
 - `sequences.json` - Your DNA sequences in JSON format
 - `start.bat` (optional) - For easy launching on Windows
@@ -140,6 +153,7 @@ Create the following files in your working directory:
 For end users, the release package is self-contained and works on Windows systems without additional installations.
 
 For developers working with just the source code:
+
 - Python 3.6 or higher
 - Biopython library
 - python-docx library
