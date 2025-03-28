@@ -595,13 +595,26 @@ def main():
     under certain conditions; refer to the LICENSE file for details.
 """)
 
+    output_path = os.path.join(os.path.dirname(__file__), "output")
+    input_path = os.path.join(os.path.dirname(__file__), "input")
+
+    os.makedirs(output_path, exist_ok=True)
+    os.makedirs(input_path, exist_ok=True)
+
     # Load DNA sequences from JSON configuration file
-    with open("sequences.json", "r") as file:
-        sequences = json.load(file)
+    try:
+        with open(os.path.join(input_path, "sequences.json"), "r") as file:
+            sequences = json.load(file)
+    except FileNotFoundError:
+        print(f"Error: File '{os.path.join(input_path, 'sequences.json')}' not found. Refer to the README.md file for instructions.")
+        return
+    except json.JSONDecodeError:
+        print(f"Error: Invalid JSON format in '{os.path.join(input_path, 'sequences.json')}'. Refer to the README.md file for instructions.")
+        return
 
     # Skip regeneration of alignment if sequences haven't changed
     # This uses MD5 hash to track changes to sequence data
-    path_hash = ".sequencehash"
+    path_hash = os.path.join(output_path, ".sequencehash")
     last_hash = None
     if os.path.exists(path_hash) and os.path.isfile(path_hash):
         with open(path_hash, "r", encoding="utf-8") as file:
@@ -611,21 +624,23 @@ def main():
     new_hash = hashlib.md5(str(sequences).encode("utf-8"), usedforsecurity=False).hexdigest()
     
     # Generate alignment if hash changed or alignment file doesn't exist
-    if last_hash != new_hash or not os.path.exists("sequences.aln") or not os.path.isfile("sequences.aln"):
+    if last_hash != new_hash or not os.path.exists(os.path.join(output_path, "sequences.aln")) or not os.path.isfile(os.path.join(output_path, "sequences.aln")):
         with open(path_hash, "w", encoding="utf-8") as file:
             file.write(new_hash)
         print("Computing DNA sequence alignment...", end='')
-        prepare_seq(sequences, "sequences.aln")
+        prepare_seq(sequences, os.path.join(output_path, "sequences.aln"))
         print("\rComputed DNA sequence alignment.   \n")
     else:
         print("Reusing unchanged DNA alignment file.\n")
 
     # Format DNA sequence into triplet notation for better readability
-    text_lines = prepare_formatted_seq("sequences.aln").splitlines()
+    text_lines = prepare_formatted_seq(os.path.join(output_path, "sequences.aln")).splitlines()
 
     # Define output filenames
-    WORD_OUTPUT_FILENAME = "sequences.docx"
-    HTML_OUTPUT_FILENAME = "sequences.html"
+    word_output_filename = os.path.join(output_path, "sequences.docx")
+    html_output_filename = os.path.join(output_path, "sequences.html")
+
+    # Initialize match results list
     match_results = []
     
     # Get search pattern from user
@@ -644,12 +659,12 @@ def main():
         print("Entered empty search phrase.\n")
     
     # Create output documents with highlighted matches
-    if save_matches_html(HTML_OUTPUT_FILENAME, text_lines, match_results):
-        print(f"Saved HTML to '{HTML_OUTPUT_FILENAME}'")
-    if save_matches_word(WORD_OUTPUT_FILENAME, text_lines, match_results):
-        print(f"Saved Word document to '{WORD_OUTPUT_FILENAME}'")
+    if save_matches_html(html_output_filename, text_lines, match_results):
+        print(f"Saved HTML to '{html_output_filename}'")
+    if save_matches_word(word_output_filename, text_lines, match_results):
+        print(f"Saved Word document to '{word_output_filename}'")
     
-    print("\nExiting...\n")
+    print("\nExiting...")
 
 
 if __name__ == "__main__":
