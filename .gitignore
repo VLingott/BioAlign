@@ -1,12 +1,16 @@
+# editor
 .idea
 .vscode
 
-.sequencehash
+# requirements
 clustal-omega-1.2.2-win64
 python-3.13.2-embed-amd64
-Bio.zip
+start.bat
+
+# output
+.sequencehash
 sequences.aln
 sequences.fasta
-sequences.docx
-start.bat
 sequences.json
+sequences.docx
+sequences.html
