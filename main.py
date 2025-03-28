@@ -653,6 +653,8 @@ def main():
         print()
 
         # Find pattern matches in the sequences
+        if skip_spaces:
+            search_word = search_word.replace(" ", "")
         match_results, match_num = process_lines(text_lines, search_word, len(sequences), ignore_spaces=skip_spaces)
         print(f"{match_num} matches found.\n")
     else:
