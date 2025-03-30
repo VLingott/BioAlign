@@ -36,14 +36,14 @@ from docx.oxml.ns import qn
 def prepare_seq(seqs: dict, output_file_name: str):
     """
     Prepare DNA sequences for alignment using Clustal Omega.
-    
+
     Converts dictionary of sequences to FASTA format and runs Clustal Omega
     to create a multiple sequence alignment file.
-    
+
     Args:
         seqs: Dictionary with sequence names as keys and sequences as values
         output_file_name: Base name for output alignment file
-    
+
     Raises:
         SystemExit: If Clustal Omega execution fails
     """
@@ -68,13 +68,13 @@ def prepare_seq(seqs: dict, output_file_name: str):
 def prepare_formatted_seq(aln_file_name: str) -> str:
     """
     Format aligned sequences in triplet notation.
-    
-    Reads a Clustal alignment file and reformats it to add spaces 
+
+    Reads a Clustal alignment file and reformats it to add spaces
     after every three nucleotides for better readability.
-    
+
     Args:
         aln_file_name: Path to the Clustal alignment file
-        
+
     Returns:
         Formatted alignment string with triplet notation
     """
@@ -114,10 +114,10 @@ def prepare_formatted_seq(aln_file_name: str) -> str:
 def split_line(line: str):
     """
     Split an alignment line into sequence name and actual sequence.
-    
+
     Args:
         line: A line from the alignment file
-        
+
     Returns:
         Tuple of (name, sequence) or None if parsing fails
     """
@@ -129,25 +129,25 @@ def split_line(line: str):
     return None
 
 
-def mark_sequence_line(sequence_line: str, search_sequence: str, pattern_index: int = None, 
+def mark_sequence_line(sequence_line: str, search_sequence: str, pattern_index: int = None,
                        preliminary_start: int = None, ignore_spaces: bool = False):
     """
     Find all occurrences of a pattern in a sequence line.
-    
+
     This function implements the core sequence search algorithm with two modes:
     1. Exact matching - spaces are significant
     2. Spaced matching - spaces are ignored during comparison
-    
+
     The function also handles partial matches that might continue on the next line
     by tracking preliminary match state.
-    
+
     Args:
         sequence_line: The text line containing the sequence to search
         search_sequence: The pattern to search for
         pattern_index: Index in search_sequence for continuing a previous match
         preliminary_start: Starting position of a preliminary match from previous line
         ignore_spaces: Whether to ignore spaces when matching
-        
+
     Returns:
         Tuple of (matches, match_count, preliminary_state, preliminary_completed)
         - matches: List of (start, end) positions of matches
@@ -160,10 +160,10 @@ def mark_sequence_line(sequence_line: str, search_sequence: str, pattern_index: 
     len_search = len(search_sequence)
     len_seq = len(sequence_line)
     preliminary = ()  # Stores state for potential match continuation
-    
+
     # Track if a preliminary match was completed
     # None = preliminary match in progress
-    # True = preliminary match successful 
+    # True = preliminary match successful
     # False = preliminary match failed or no preliminary match was attempted
     preliminary_completed = False if pattern_index is None else None
 
@@ -189,18 +189,18 @@ def mark_sequence_line(sequence_line: str, search_sequence: str, pattern_index: 
             pattern_i = 0  # Current position in pattern
             sequence_i = current_pos  # Current position in sequence
             match_start_i = -1  # Starting position of potential match
-            
+
             # Continue a match from previous line if pattern_index is provided
             if pattern_index is not None and pattern_index != -1:
                 pattern_i = pattern_index  # Resume pattern matching from this position
                 if preliminary_start is not None:
                     match_start_i = preliminary_start  # Use provided start position
                 pattern_index = -1  # Reset to avoid using this value again
-                
+
             # Character-by-character comparison loop
             while pattern_i < len_search and sequence_i < len_seq:
                 seq_char = sequence_line[sequence_i]
-                
+
                 # Skip spaces in the sequence
                 if seq_char == ' ':
                     sequence_i += 1
@@ -208,11 +208,11 @@ def mark_sequence_line(sequence_line: str, search_sequence: str, pattern_index: 
                     if match_start_i == -1 and pattern_i == 0:
                         current_pos = sequence_i
                     continue
-                
+
                 # Mark the start of a potential match
                 if match_start_i == -1:
                     match_start_i = sequence_i
-                
+
                 # Character matches
                 if seq_char == search_sequence[pattern_i]:
                     pattern_i += 1
@@ -223,14 +223,14 @@ def mark_sequence_line(sequence_line: str, search_sequence: str, pattern_index: 
                     if preliminary_completed is None:
                         preliminary_completed = False
                     break
-            
+
             # Complete match found
             if pattern_i == len_search:
                 match_end_i = sequence_i
                 matches.append((match_start_i, match_end_i))
                 matches_num += 1
                 current_pos = match_end_i  # Continue search after this match
-                
+
                 # If this was a preliminary match continuation, mark it complete
                 if preliminary_completed is None:
                     preliminary_completed = True
@@ -239,13 +239,13 @@ def mark_sequence_line(sequence_line: str, search_sequence: str, pattern_index: 
                 # Track partial match at end of line for potential continuation
                 if pattern_i > 0 and sequence_i == len_seq:
                     preliminary = (match_start_i, sequence_i, pattern_i)
-                
+
                 current_pos += 1  # Try next position
-                
+
                 # Store partial match data if at end of sequence
                 if current_pos == len_seq and match_start_i != -1 and pattern_i > 0:
                     preliminary = (match_start_i, sequence_i, pattern_i)
-                    
+
     # Return results
     if len(matches) != 0:
         return matches, matches_num, preliminary, preliminary_completed
@@ -253,20 +253,20 @@ def mark_sequence_line(sequence_line: str, search_sequence: str, pattern_index: 
         return None, 0, preliminary, preliminary_completed if preliminary_completed is not None else False
 
 
-def process_lines(lines: list, search_sequence: str, sequences_num: int, 
+def process_lines(lines: list, search_sequence: str, sequences_num: int,
                  ignore_spaces: bool = False) -> tuple:
     """
     Process all lines of the alignment to find pattern matches.
-    
+
     This function handles matches that continue across multiple lines by tracking
     preliminary (partial) matches for each sequence name.
-    
+
     Args:
         lines: All lines from the alignment file
         search_sequence: Pattern to search for
         sequences_num: Number of sequences in the alignment
         ignore_spaces: Whether to ignore spaces during matching
-        
+
     Returns:
         Tuple of (results, matches_num):
         - results: List of matches for each line (None or list of (start, end) tuples)
@@ -276,48 +276,48 @@ def process_lines(lines: list, search_sequence: str, sequences_num: int,
     preliminary = {}
     matches_num = 0
     results = []
-    
+
     # Number of lines between consecutive occurrences of the same sequence
     # (includes sequences + blank/marker lines)
     lines_until_next_sequence = sequences_num + 2
-    
+
     # Process each line of the alignment
     for i, line in enumerate(lines):
         # Skip header lines (CLUSTAL format has 3 header lines)
         if i < 3:
             results.append(None)
             continue
-            
+
         # Extract sequence name and content
         name_sequence_line = split_line(line)
         if name_sequence_line:
             name, sequence_line = name_sequence_line
-            
+
             # Check if we have a partial match from previous occurrence of this sequence
             if name in preliminary and preliminary.get(name) != ():
                 prev_start, _, prev_pattern_i = preliminary.get(name)
-                
+
                 # Continue matching from where we left off
                 # If this is the immediate next line, use preliminary_start
                 matches_compound = mark_sequence_line(
-                    sequence_line, 
-                    search_sequence, 
-                    pattern_index=prev_pattern_i, 
+                    sequence_line,
+                    search_sequence,
+                    pattern_index=prev_pattern_i,
                     preliminary_start=prev_start if i - lines_until_next_sequence < 0 else None,
                     ignore_spaces=ignore_spaces
                 )
             else:
                 # Start fresh match for this sequence
                 matches_compound = mark_sequence_line(sequence_line, search_sequence, ignore_spaces=ignore_spaces)
-            
+
             # Process match results
             if matches_compound is not None:
                 matches, matches_count, preliminary_value, preliminary_completed = matches_compound
-                
+
                 # Handle case where a preliminary match was completed
                 # This means we need to mark the end of the previous line too
-                if (preliminary_completed and 
-                        name in preliminary and 
+                if (preliminary_completed and
+                        name in preliminary and
                         preliminary.get(name) != ()):
                     # Find previous line with this sequence
                     prev_line_index = i - lines_until_next_sequence
@@ -330,10 +330,10 @@ def process_lines(lines: list, search_sequence: str, sequences_num: int,
                         match_end = len(lines[prev_line_index].split(' ', 1)[1]) if ' ' in lines[prev_line_index] else 0
                         results[prev_line_index].append((match_start, match_end))
                         matches_num += 1
-                
+
                 # Update preliminary match state for this sequence
                 preliminary[name] = preliminary_value
-                
+
                 # Add matches for current line
                 if matches:
                     matches_num += matches_count  # Note: This could be a bug, should be matches_num not matches_count
@@ -344,7 +344,7 @@ def process_lines(lines: list, search_sequence: str, sequences_num: int,
                 results.append(None)
         else:
             results.append(None)
-            
+
     return results, matches_num
 
 
@@ -356,10 +356,10 @@ def save_matches_html(
 ):
     """
     Generate an HTML document with highlighted sequence matches.
-    
+
     Creates an HTML file with the alignment where matched patterns
     are highlighted with yellow background.
-    
+
     Args:
         file_path: Output HTML file path
         lines: Alignment lines to display
@@ -367,7 +367,7 @@ def save_matches_html(
         page_title: HTML page title
         font_name: Font to use for sequence display
         max_width_percent: Maximum width of the sequence display area
-        
+
     Returns:
         Boolean indicating success or failure
     """
@@ -469,10 +469,10 @@ def save_matches_word(
 ):
     """
     Generate a Word document with highlighted sequence matches.
-    
+
     Creates a Word document with the alignment where matched patterns
     are highlighted with the specified color.
-    
+
     Args:
         file_path: Output DOCX file path
         lines: Alignment lines to display
@@ -481,7 +481,7 @@ def save_matches_word(
         font_size: Font size in points
         margin_inches: Document margins in inches
         highlight_color: Color to use for highlighting matches
-        
+
     Returns:
         Boolean indicating success or failure
     """
@@ -578,7 +578,7 @@ def save_matches_word(
 def main():
     """
     Main program execution flow.
-    
+
     Steps:
     1. Load sequence data from JSON
     2. Generate or reuse sequence alignment
@@ -595,8 +595,8 @@ def main():
     under certain conditions; refer to the LICENSE file for details.
 """)
 
-    output_path = os.path.join(os.path.dirname(__file__), "output")
-    input_path = os.path.join(os.path.dirname(__file__), "input")
+    output_path = "output"
+    input_path = "input"
 
     os.makedirs(output_path, exist_ok=True)
     os.makedirs(input_path, exist_ok=True)
@@ -619,17 +619,16 @@ def main():
     if os.path.exists(path_hash) and os.path.isfile(path_hash):
         with open(path_hash, "r", encoding="utf-8") as file:
             last_hash = file.read()
-    
+
     # Calculate hash of current sequences
     new_hash = hashlib.md5(str(sequences).encode("utf-8"), usedforsecurity=False).hexdigest()
-    
+
     # Generate alignment if hash changed or alignment file doesn't exist
     if last_hash != new_hash or not os.path.exists(os.path.join(output_path, "sequences.aln")) or not os.path.isfile(os.path.join(output_path, "sequences.aln")):
         with open(path_hash, "w", encoding="utf-8") as file:
             file.write(new_hash)
-        print("Computing DNA sequence alignment...", end='')
         prepare_seq(sequences, os.path.join(output_path, "sequences.aln"))
-        print("\rComputed DNA sequence alignment.   \n")
+        print("Computed DNA sequence alignment.\n")
     else:
         print("Reusing unchanged DNA alignment file.\n")
 
@@ -642,11 +641,11 @@ def main():
 
     # Initialize match results list
     match_results = []
-    
+
     # Get search pattern from user
     search_word = input("Input DNA sequence to search for (e.g. \"ACC\" or \"\" to disable marking)\n > ").strip()
     print()
-    
+
     if len(search_word) != 0:
         # Determine search mode: exact or ignoring spaces
         skip_spaces = True if "space" in input("Search mode (exact/spaced)\n > ") else False
@@ -659,13 +658,13 @@ def main():
         print(f"{match_num} matches found.\n")
     else:
         print("Entered empty search phrase.\n")
-    
+
     # Create output documents with highlighted matches
     if save_matches_html(html_output_filename, text_lines, match_results):
         print(f"Saved HTML to '{html_output_filename}'")
     if save_matches_word(word_output_filename, text_lines, match_results):
         print(f"Saved Word document to '{word_output_filename}'")
-    
+
     print("\nExiting...")
 
 
